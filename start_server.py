@@ -82,9 +82,14 @@ except ImportError:
     def format_refs_for_prompt(r): return ""
 
 
-DB_ROOT = Path.home() / "repair_ai_db"
-INDEX   = json.loads((DB_ROOT / "index.json").read_text())
-BOARDS  = {b["board_number"]: b for b in INDEX["boards"] if b.get("board_number")}
+DB_ROOT = Path(os.environ.get("REPAIR_AI_DB", Path.home() / "repair_ai_db"))
+try:
+    INDEX = json.loads((DB_ROOT / "index.json").read_text())
+    BOARDS = {b["board_number"]: b for b in INDEX["boards"] if b.get("board_number")}
+except FileNotFoundError:
+    INDEX = {"boards": []}
+    BOARDS = {}
+    print(f"⚠ No index.json at {DB_ROOT} — running without board data")
 SEARCH_INDEX = {}
 
 def build_search_index():
@@ -393,6 +398,6 @@ def ai_chat(msg, ctx, history=[]):
 
 
 if __name__=="__main__":
-    PORT=8765; build_search_index()
+    PORT=int(os.environ.get("PORT", 8765)); build_search_index()
     print(f"✅ http://localhost:{PORT}  |  {len(BOARDS)} boards loaded")
     HTTPServer(("",PORT),Handler).serve_forever()
