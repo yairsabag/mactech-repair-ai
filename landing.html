@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MacTech — Closed Beta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #080a0d;
+  --surface:  #0d1117;
+  --border:   #1c2230;
+  --border2:  #253040;
+  --text:     #d4dbe8;
+  --muted:    #4a5568;
+  --accent:   #00e5a0;
+  --accent2:  #005c41;
+  --warn:     #e5a000;
+  --mono:     'Azeret Mono', monospace;
+  --sans:     'DM Sans', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Grid overlay ─────────────────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,160,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,160,.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── Scan line ────────────────────────────────────────────────────────────── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,.06) 2px, rgba(0,0,0,.06) 4px
+  );
+  pointer-events: none; z-index: 0;
+}
+
+/* ── Nav ──────────────────────────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 16px 48px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8,10,13,.85);
+  backdrop-filter: blur(12px);
+}
+.logo {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  color: var(--accent); letter-spacing: .08em;
+}
+.logo span { color: var(--muted); }
+.nav-badge {
+  font-family: var(--mono); font-size: 11px;
+  border: 1px solid var(--accent2);
+  color: var(--accent); padding: 3px 10px; border-radius: 3px;
+  letter-spacing: .06em;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────────── */
+.hero {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 120px 24px 80px;
+  text-align: center;
+}
+
+.tag {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+  color: var(--accent); border: 1px solid var(--accent2);
+  padding: 4px 14px; border-radius: 3px; margin-bottom: 40px;
+  display: inline-flex; align-items: center; gap: 8px;
+  opacity: 0; animation: fadeUp .6s .1s ease forwards;
+}
+.tag::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+h1 {
+  font-family: var(--mono); font-size: clamp(36px, 6vw, 72px);
+  font-weight: 600; line-height: 1.1;
+  letter-spacing: -.02em; margin-bottom: 8px;
+  opacity: 0; animation: fadeUp .7s .2s ease forwards;
+}
+h1 em {
+  font-style: normal; color: var(--accent);
+  position: relative;
+}
+h1 em::after {
+  content: '';
+  position: absolute; bottom: -2px; left: 0; right: 0; height: 2px;
+  background: var(--accent); opacity: .4;
+}
+
+.hero-sub {
+  font-family: var(--mono); font-size: 13px;
+  color: var(--muted); letter-spacing: .04em;
+  margin-bottom: 32px;
+  opacity: 0; animation: fadeUp .7s .25s ease forwards;
+}
+
+.hero-desc {
+  max-width: 540px; font-size: 16px; color: #8899aa;
+  line-height: 1.7; margin-bottom: 60px;
+  opacity: 0; animation: fadeUp .7s .35s ease forwards;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Stats row ────────────────────────────────────────────────────────────── */
+.stats {
+  display: flex; gap: 48px; margin-bottom: 80px;
+  opacity: 0; animation: fadeUp .7s .4s ease forwards;
+}
+.stat { text-align: center; }
+.stat-n {
+  font-family: var(--mono); font-size: 28px; font-weight: 600;
+  color: var(--accent); line-height: 1;
+}
+.stat-l { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ── Register card ────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 40px 44px;
+  width: 100%; max-width: 460px;
+  opacity: 0; animation: fadeUp .7s .5s ease forwards;
+  position: relative;
+}
+.card::before {
+  content: '';
+  position: absolute; top: 0; left: 40px; right: 40px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: .6;
+}
+.card-title {
+  font-family: var(--mono); font-size: 12px; letter-spacing: .1em;
+  color: var(--muted); text-transform: uppercase; margin-bottom: 28px;
+}
+
+.field { margin-bottom: 16px; }
+.field label {
+  display: block; font-family: var(--mono); font-size: 11px;
+  letter-spacing: .08em; color: var(--muted); margin-bottom: 7px;
+}
+.field input {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border2); border-radius: 3px;
+  color: var(--text); padding: 10px 14px;
+  font-size: 14px; font-family: var(--sans);
+  outline: none; transition: border-color .2s;
+}
+.field input:focus { border-color: var(--accent); }
+.field input::placeholder { color: var(--muted); }
+
+.field.mono input { font-family: var(--mono); letter-spacing: .05em; }
+
+.btn {
+  width: 100%; margin-top: 8px;
+  background: var(--accent); color: #03120c;
+  border: none; border-radius: 3px;
+  padding: 12px; font-size: 14px; font-weight: 500;
+  font-family: var(--mono); letter-spacing: .06em;
+  cursor: pointer; transition: all .15s;
+}
+.btn:hover { background: #00ffb3; }
+.btn:disabled { background: var(--border2); color: var(--muted); cursor: default; }
+
+.msg-ok  { color: var(--accent);  font-family: var(--mono); font-size: 13px; margin-top: 16px; line-height: 1.5; }
+.msg-err { color: #ff6b6b;         font-family: var(--mono); font-size: 13px; margin-top: 16px; }
+.msg-ok::before  { content: '✓  '; }
+.msg-err::before { content: '✗  '; }
+
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 20px 0; color: var(--muted); font-size: 12px; font-family: var(--mono);
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+.login-link {
+  text-align: center; font-size: 13px; color: var(--muted);
+  font-family: var(--mono);
+}
+.login-link a {
+  color: var(--accent); text-decoration: none; cursor: pointer;
+}
+.login-link a:hover { text-decoration: underline; }
+
+/* ── Features ─────────────────────────────────────────────────────────────── */
+.features {
+  position: relative; z-index: 1;
+  padding: 80px 48px;
+  max-width: 1100px; margin: 0 auto;
+}
+.section-label {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+  color: var(--muted); text-transform: uppercase; margin-bottom: 48px;
+  display: flex; align-items: center; gap: 14px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.feat-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 4px; overflow: hidden;
+}
+.feat {
+  background: var(--surface); padding: 32px 28px;
+  transition: background .2s;
+}
+.feat:hover { background: #0f1520; }
+.feat-icon {
+  font-family: var(--mono); font-size: 22px; color: var(--accent);
+  margin-bottom: 16px; line-height: 1;
+}
+.feat-title {
+  font-weight: 500; font-size: 15px; margin-bottom: 8px; color: #c8d8e8;
+}
+.feat-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* ── How it works ─────────────────────────────────────────────────────────── */
+.how {
+  position: relative; z-index: 1;
+  padding: 80px 48px;
+  max-width: 1100px; margin: 0 auto;
+}
+.steps {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0; position: relative;
+}
+.steps::before {
+  content: '';
+  position: absolute; top: 20px; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), var(--border2), transparent);
+}
+.step { padding: 0 20px; text-align: center; }
+.step-num {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+  color: var(--accent); background: var(--bg);
+  border: 1px solid var(--accent2); border-radius: 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; margin-bottom: 20px; position: relative; z-index: 1;
+}
+.step-title { font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #c8d8e8; }
+.step-desc  { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--border);
+  padding: 28px 48px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 12px; color: var(--muted);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  nav { padding: 14px 20px; }
+  .stats { gap: 28px; }
+  .feat-grid { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .steps::before { display: none; }
+  .features, .how { padding: 60px 20px; }
+  footer { flex-direction: column; gap: 8px; text-align: center; }
+  .card { padding: 28px 24px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">MAC<span>//</span>TECH</div>
+  <div class="nav-badge">CLOSED BETA</div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="tag">Board-level AI Diagnostic Assistant</div>
+
+  <h1>Fix boards.<br><em>Not guesswork.</em></h1>
+  <p class="hero-sub">// schematic-aware · decision-engine driven · step-by-step</p>
+
+  <p class="hero-desc">
+    MacTech guides technicians through Apple logic board repair using
+    real schematics, boardview, and a deterministic diagnostic engine —
+    no hallucinations, no wasted steps.
+  </p>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-n">15+</div>
+      <div class="stat-l">board models</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">3</div>
+      <div class="stat-l">symptom paths</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">0</div>
+      <div class="stat-l">hallucinations</div>
+    </div>
+  </div>
+
+  <!-- Register / Login card -->
+  <div class="card" id="authCard">
+    <div class="card-title" id="cardTitle">// Request beta access</div>
+
+    <div id="registerForm">
+      <div class="field">
+        <label>USERNAME</label>
+        <input id="rName" type="text" placeholder="technician_name" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>PASSWORD</label>
+        <input id="rPw" type="password" placeholder="min 6 characters" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>EMAIL (optional)</label>
+        <input id="rEmail" type="email" placeholder="tech@repairlab.com">
+      </div>
+      <div class="field mono">
+        <label>INVITE CODE</label>
+        <input id="rCode" type="text" placeholder="xxxxxxxxxxxx">
+      </div>
+      <button class="btn" id="registerBtn" onclick="doRegister()">Request Access →</button>
+      <div id="registerMsg"></div>
+
+      <div class="divider">or</div>
+      <div class="login-link">Already registered? <a onclick="showLogin()">Sign in</a></div>
+    </div>
+
+    <div id="loginForm" style="display:none">
+      <div class="field">
+        <label>USERNAME</label>
+        <input id="lUser" type="text" placeholder="your_username" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>PASSWORD</label>
+        <input id="lPw" type="password" placeholder="password" autocomplete="current-password">
+      </div>
+      <button class="btn" id="loginBtn" onclick="doLogin()">Sign in →</button>
+      <div id="loginMsg"></div>
+
+      <div class="divider">or</div>
+      <div class="login-link">Need an invite? <a onclick="showRegister()">Request access</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ── -->
+<section class="features">
+  <div class="section-label">// What's inside</div>
+  <div class="feat-grid">
+    <div class="feat">
+      <div class="feat-icon">⬡</div>
+      <div class="feat-title">Decision Engine</div>
+      <div class="feat-desc">Deterministic diagnostic tree — not LLM guesswork. Every step is locked to the schematic path for that board.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">◈</div>
+      <div class="feat-title">Live Boardview</div>
+      <div class="feat-desc">Click any net in the chat — it highlights instantly on the boardview. Schematics and boardview side by side.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">◎</div>
+      <div class="feat-title">Forum Knowledge</div>
+      <div class="feat-desc">Thousands of repair cases from Rossmann forum, ranked and surfaced per board and symptom.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">▷</div>
+      <div class="feat-title">Current Draw Shortcuts</div>
+      <div class="feat-desc">Tell it your bench PSU reading — DE auto-confirms rails and skips straight to the relevant diagnostic step.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">◻</div>
+      <div class="feat-title">Guardrails</div>
+      <div class="feat-desc">AI output is validated against the DE step. If it hallucinates a net that doesn't exist — it's discarded silently.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">⊕</div>
+      <div class="feat-title">Feedback Loop</div>
+      <div class="feat-desc">Every diagnosis gets rated. Wrong diagnosis, missing schematic, need better guidance — all fed back into the engine.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ── -->
+<section class="how">
+  <div class="section-label">// How it works</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">Select board</div>
+      <div class="step-desc">Choose from 15+ Apple board models. Schematic and boardview load automatically.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">Describe symptom</div>
+      <div class="step-desc">No backlight, no power, no charge — or type your bench PSU reading directly.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">Follow the path</div>
+      <div class="step-desc">The engine tells you exactly what to measure. One step at a time. No loops.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-title">Find the fault</div>
+      <div class="step-desc">Shorted cap, blown fuse, dead IC — diagnosed and localised. Click net → boardview highlights it.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>MacTech // Closed Beta</span>
+  <span>Board-level diagnostics for Apple logic board repair</span>
+</footer>
+
+<script>
+const API = '';
+
+function showLogin() {
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('cardTitle').textContent = '// Sign in';
+}
+function showRegister() {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = 'block';
+  document.getElementById('cardTitle').textContent = '// Request beta access';
+}
+
+async function doRegister() {
+  const btn = document.getElementById('registerBtn');
+  const msg = document.getElementById('registerMsg');
+  const username = document.getElementById('rName').value.trim();
+  const password = document.getElementById('rPw').value;
+  const email    = document.getElementById('rEmail').value.trim();
+  const code     = document.getElementById('rCode').value.trim();
+
+  if (!username || !password || !code) {
+    msg.className='msg-err'; msg.textContent='Username, password and invite code required.'; return;
+  }
+  btn.disabled = true; btn.textContent = 'Requesting...';
+  msg.textContent = '';
+  try {
+    const r = await fetch(API + '/api/register', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, password, email, invite_code: code})
+    });
+    const d = await r.json();
+    if (d.error) {
+      msg.className='msg-err'; msg.textContent=d.error;
+      btn.disabled=false; btn.textContent='Request Access →'; return;
+    }
+    localStorage.setItem('mactech_token', d.token);
+    localStorage.setItem('mactech_user', d.username);
+    msg.className = 'msg-ok';
+    msg.innerHTML = `Access granted — welcome, ${d.username}.<br>Redirecting...`;
+    setTimeout(() => { window.location.href = '/'; }, 1600);
+  } catch(e) {
+    msg.className='msg-err'; msg.textContent='Server error.';
+    btn.disabled=false; btn.textContent='Request Access →';
+  }
+}
+
+async function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  const msg = document.getElementById('loginMsg');
+  const username = document.getElementById('lUser').value.trim();
+  const password = document.getElementById('lPw').value;
+  if (!username || !password) { msg.className='msg-err'; msg.textContent='Username and password required.'; return; }
+  btn.disabled=true; btn.textContent='Signing in...';
+  try {
+    const r = await fetch(API + '/api/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const d = await r.json();
+    if (d.error) {
+      msg.className='msg-err'; msg.textContent=d.error;
+      btn.disabled=false; btn.textContent='Sign in →'; return;
+    }
+    localStorage.setItem('mactech_token', d.token);
+    localStorage.setItem('mactech_user', d.username);
+    msg.className='msg-ok'; msg.textContent='Signed in — redirecting...';
+    setTimeout(() => { window.location.href='/'; }, 1200);
+  } catch(e) {
+    msg.className='msg-err'; msg.textContent='Server error.';
+    btn.disabled=false; btn.textContent='Sign in →';
+  }
+}
+
+// Pre-fill invite code from URL ?invite=xxx
+const urlCode = new URLSearchParams(location.search).get('invite');
+if (urlCode) document.getElementById('rCode').value = urlCode;
+
+// If already logged in → go straight to app
+if (localStorage.getItem('mactech_token')) {
+  fetch(API + '/api/chat', {
+    method: 'POST',
+    headers: {'Authorization': 'Bearer ' + localStorage.getItem('mactech_token'),
+              'Content-Type': 'application/json'},
+    body: JSON.stringify({message:'ping', board_context:'', history:[]})
+  }).then(r => { if(r.ok) window.location.href = '/'; });
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('loginForm').style.display !== 'none') doLogin();
+  else doRegister();
+});
+</script>
+</body>
+</html>

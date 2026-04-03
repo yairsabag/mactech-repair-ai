@@ -1,0 +1,39 @@
+[
+    {
+        "domain": "boards.rossmanngroup.com",
+        "hostOnly": true,
+        "httpOnly": false,
+        "name": "xf_csrf",
+        "path": "/",
+        "sameSite": null,
+        "secure": true,
+        "session": true,
+        "storeId": null,
+        "value": "5g0yZ5KccoqUECRD"
+    },
+    {
+        "domain": "boards.rossmanngroup.com",
+        "hostOnly": true,
+        "httpOnly": true,
+        "name": "xf_session",
+        "path": "/",
+        "sameSite": null,
+        "secure": true,
+        "session": true,
+        "storeId": null,
+        "value": "wQwsvNMqwuWvHXEqp8QLAoWFoLrdLm-p"
+    },
+    {
+        "domain": "boards.rossmanngroup.com",
+        "expirationDate": 1804962274.847251,
+        "hostOnly": true,
+        "httpOnly": true,
+        "name": "xf_user",
+        "path": "/",
+        "sameSite": null,
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "19708%2C0RztGfh-p7SKYkx3r4QR34cGJE5vJu5M6SXbQTLR"
+    }
+]

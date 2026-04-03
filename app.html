@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>MacBook Repair AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;background:#0f0f0f;color:#e0e0e0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#topbar{background:#1a1a1a;border-bottom:1px solid #2a2a2a;padding:9px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+#topbar h1{font-size:15px;font-weight:600;color:#fff;white-space:nowrap}
+#board-select{background:#252525;border:1px solid #333;color:#e0e0e0;padding:5px 10px;border-radius:6px;font-size:13px;min-width:270px}
+#bi-strip{margin-right:auto;font-size:11px;color:#555;display:flex;gap:14px}
+#main{display:flex;flex:1;overflow:hidden}
+
+/* Viewer */
+#viewer-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#viewer-tabs{display:flex;background:#161616;border-bottom:1px solid #222;flex-shrink:0;align-items:center}
+.vtab{padding:8px 16px;font-size:12px;cursor:pointer;color:#666;border-bottom:2px solid transparent;white-space:nowrap}
+.vtab.active{color:#60a5fa;border-bottom-color:#60a5fa}
+#search-wrap{margin-right:auto;position:relative;padding:3px 10px;display:flex;align-items:center}
+#sch-search{background:#252525;border:1px solid #333;color:#e0e0e0;padding:4px 10px;border-radius:5px;font-size:12px;width:230px;direction:ltr}
+#sch-search:focus{outline:none;border-color:#60a5fa}
+#search-results{position:absolute;top:34px;right:10px;background:#1e2535;border:1px solid #2a3a55;border-radius:6px;z-index:100;min-width:200px;max-height:240px;overflow-y:auto;display:none;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.sri{padding:8px 12px;cursor:pointer;color:#90b8e0;font-size:12px;border-bottom:1px solid #1a2a3a}
+.sri:hover{background:#253045}
+
+/* BV */
+#bv-view{flex:1;position:relative;overflow:hidden;display:flex}
+#bv-canvas{display:block;flex:1}
+#bv-tooltip{position:absolute;background:#1a2535;border:1px solid #2a3a55;color:#90b8e0;padding:7px 10px;border-radius:6px;font-size:11px;pointer-events:none;display:none;z-index:10;max-width:210px;line-height:1.6;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+#bv-controls{position:absolute;top:10px;left:10px;display:flex;gap:5px;flex-direction:column}
+.bv-btn{background:#1e2535cc;border:1px solid #2a3a55;color:#90b8e0;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.bv-btn:hover{background:#253045}
+#bv-status{position:absolute;bottom:8px;left:8px;font-size:11px;color:#444;background:rgba(0,0,0,.6);padding:3px 8px;border-radius:4px}
+#bv-highlight-bar{position:absolute;bottom:8px;right:8px;font-size:11px;color:#ffcc00;background:rgba(0,0,0,.7);padding:4px 10px;border-radius:4px;display:none}
+
+/* SCH — key fix: overflow hidden on container, image fits by default, user zooms in */
+#sch-view{flex:1;overflow:hidden;display:none;flex-direction:column}
+#sch-content{flex:1;overflow:hidden;background:#0a0a0a;position:relative;cursor:grab;user-select:none}
+#sch-content.grabbing{cursor:grabbing}
+#sch-wrap{position:absolute;top:0;left:0;transform-origin:top left;will-change:transform}
+#sch-img{display:block;width:100%}
+#page-nav{background:#1a1a1a;border-top:1px solid #222;padding:6px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;font-size:12px;color:#888}
+#page-nav button{background:#252525;border:1px solid #333;color:#ccc;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:12px}
+#page-nav button:hover{background:#333}
+
+/* Chat */
+#chat-panel{width:340px;flex-shrink:0;display:flex;flex-direction:column;background:#141414;border-right:1px solid #222}
+#chat-header{padding:11px 14px;border-bottom:1px solid #222;font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0}
+#chips{padding:7px 10px;display:flex;flex-wrap:wrap;gap:5px;border-bottom:1px solid #222}
+.chip{background:#1e2535;border:1px solid #2a3a55;color:#90b8e0;padding:3px 9px;border-radius:20px;font-size:11px;cursor:pointer}
+.chip:hover{background:#253045}
+#msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.msg{padding:9px 12px;border-radius:10px;font-size:13px;line-height:1.55;max-width:96%}
+.msg.ai  {background:#1e2a3a;color:#c8d8f0;align-self:flex-start;border:1px solid #2a3f5a}
+.msg.user{background:#1e3a2a;color:#c8f0d8;align-self:flex-end;border:1px solid #2a5a3a}
+.msg.sys {background:#2a2a1e;color:#f0e8c0;align-self:center;font-size:11px;border:1px solid #4a4a2a;text-align:center;padding:5px 10px}
+.ctag{display:inline-block;background:#253045;border:1px solid #3a5070;color:#60b0ff;padding:1px 6px;border-radius:4px;font-family:monospace;font-size:12px;cursor:pointer;margin:1px}
+.ctag:hover{background:#2a3a5a}
+#chat-input-area{padding:10px;border-top:1px solid #222;display:flex;gap:7px}
+#chat-input{flex:1;background:#252525;border:1px solid #333;color:#e0e0e0;padding:7px 10px;border-radius:7px;font-size:13px;resize:none;height:64px;font-family:inherit;direction:rtl}
+#chat-input:focus{outline:none;border-color:#60a5fa}
+#send-btn{background:#1d4ed8;border:none;color:#fff;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:13px;align-self:flex-end}
+#send-btn:hover{background:#2563eb}
+#send-btn:disabled{background:#333;color:#666;cursor:not-allowed}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <h1>🔧 MacBook Repair AI</h1>
+  <select id="board-select" onchange="loadBoard(this.value)"><option value="">— Select board —</option></select>
+  <div id="bi-strip">
+    <span id="bi-board">—</span>
+    <span id="bi-model">—</span>
+    <span id="bi-chip">—</span>
+  </div>
+</div>
+<div id="main">
+  <div id="viewer-panel">
+    <div id="viewer-tabs">
+      <div id="tab-bv"  class="vtab active" onclick="showBV()">🔲 Boardview</div>
+      <div id="tab-sch" class="vtab"        onclick="showSCH()">📄 Schematic</div>
+      <div id="search-wrap">
+        <input id="sch-search" placeholder="Describe the issue..." oninput="onSearch(this.value)" onkeydown="onSKey(event)">
+        <div id="search-results"></div>
+      </div>
+    </div>
+
+    <div id="bv-view">
+      <canvas id="bv-canvas"></canvas>
+      <div id="bv-tooltip"></div>
+      <div id="bv-controls">
+        <button class="bv-btn" onclick="bvZoom(1.25)" title="Zoom in">+</button>
+        <button class="bv-btn" onclick="bvZoom(0.8)"  title="Zoom out">−</button>
+        <button class="bv-btn" onclick="fitBV();drawBV()" title="Fit">⊡</button>
+        <button class="bv-btn" id="btn-side" onclick="toggleSide()" title="Flip">⇅</button>
+        <button class="bv-btn" id="btn-mirror" onclick="toggleMirror()" title="Mirror">⇔</button>
+        <button class="bv-btn" onclick="rotateBV()" title="Rotate 90°">↻</button>
+      </div>
+      <div id="bv-status">Select board</div>
+      <div id="bv-highlight-bar"></div>
+    </div>
+
+    <div id="sch-view">
+      <div id="sch-content">
+        <div id="sch-wrap"><img id="sch-img" src="" alt=""></div>
+      </div>
+      <div id="page-nav" style="display:none">
+        <button onclick="prevPage()">→ Prev</button>
+        <span id="page-label">Page 1</span>
+        <button onclick="nextPage()">Next ←</button>
+        <span style="margin-right:auto;font-size:11px;color:#444">Scroll = zoom · גרור = הזזה · Button Fit לאיפוס</span>
+        <button onclick="fitSch()">Fit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="chat-panel">
+    <div id="chat-header"><div class="dot"></div>AI Diagnostic Assistant</div>
+    <div id="chips">
+      <div class="chip" onclick="quick('No power')">No power</div>
+      <div class="chip" onclick="quick('No charge')">No charge</div>
+      <div class="chip" onclick="quick('No display')">No display</div>
+      <div class="chip" onclick="quick('Shuts down')">Shuts down</div>
+      <div class="chip" onclick="quick('Liquid damage')">Liquid damage</div>
+      <div class="chip" onclick="quick('USB dead')">USB dead</div>
+    </div>
+    <div id="msgs">
+      <div class="msg ai">Select a board and describe the issue — I'll guide you step by step.</div>
+    </div>
+    <div id="chat-input-area">
+      <textarea id="chat-input" placeholder="Describe the issue..." onkeydown="handleKey(event)"></textarea>
+      <button id="send-btn" onclick="sendMsg()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let board=null, bvData=null;
+let bvScale=1, bvOX=0, bvOY=0, bvSide=0, bvBoardW=5000, bvRot=0, bvMirror=false;
+let bvLabelHits=[];
+let bvDrag=false, bvDX=0, bvDY=0;
+let highlighted=new Set();
+let schPages=[], schPage=0, schScale=1, schX=0, schY=0;
+let schDrag=false, schDX=0, schDY=0;
+
+// ── Init ──────────────────────────────────────────
+async function init(){
+  const boards=await(await fetch('/api/boards')).json();
+  const sel=document.getElementById('board-select');
+  Object.entries(boards).sort((a,b)=>a[1].model.localeCompare(b[1].model)).forEach(([n,i])=>{
+    const o=document.createElement('option');o.value=n;o.text=`${i.model}  (${n})`;sel.appendChild(o);
+  });
+}
+
+async function loadBoard(num){
+  if(!num)return;
+  board=await(await fetch(`/api/board/${num}`)).json();
+  document.getElementById('bi-board').textContent=board.board_number;
+  document.getElementById('bi-model').textContent=board.model;
+  document.getElementById('bi-chip').textContent=board.chip;
+  addMsg('sys',`✓ ${board.model}`);
+  schPages=[];schPage=0;
+  for(const s of (board.files.schematics||[])) schPages.push(...(s.images||[]));
+  // sort pages numerically
+  schPages.sort((a,b)=>{const na=parseInt(a.match(/(\d+)\.png$/)?.[1]||0),nb=parseInt(b.match(/(\d+)\.png$/)?.[1]||0);return na-nb;});
+  await loadBV(num);
+  showBV();
+}
+
+// ── Boardview ─────────────────────────────────────
+async function loadBV(num){
+  document.getElementById('bv-status').textContent='טוען boardview...';
+  const res=await fetch(`/api/boardview/${num}`);
+  bvData=await res.json();
+  if(bvData.error){
+    document.getElementById('bv-status').textContent='No boardview — הרץ: python3 boardview_parser.py';
+    return;
+  }
+  highlighted.clear(); selectedNet=null; hoverNet=null; hoverPin=null; bvRot=0;
+  // Auto-select side with most pins
+  const topPins = bvData.pins.filter(p=>p.side===0).length;
+  const btmPins = bvData.pins.filter(p=>p.side===1).length;
+  bvSide = btmPins > topPins ? 1 : 0;
+  const c=document.getElementById('bv-canvas');
+  const wrap=document.getElementById('bv-view');
+  c.width=wrap.clientWidth; c.height=wrap.clientHeight;
+  buildNetIndex();
+  fitBV(); drawBV();
+}
+
+function fitBV(){
+  if(!bvData)return;
+  const c=document.getElementById('bv-canvas');
+  const wrap=document.getElementById('bv-view');
+  c.width=wrap.clientWidth||900; c.height=wrap.clientHeight||600;
+
+  // Use PIN positions for accurate bounds (pins have real coords, comps may have centroid 0,0)
+  const sideComps=new Set(bvData.components.filter(x=>x.side===bvSide||x.side===2).map(x=>x.ref));
+  let pts=bvData.pins.filter(p=>(sideComps.has(p.ref)||(p.side===2)) && (p.x||p.y));
+  if(!pts.length) pts=bvData.pins.filter(p=>p.x||p.y); // fallback: all pins
+  if(!pts.length) return;
+
+  const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+  const minX=Math.min(...xs), maxX=Math.max(...xs);
+  const minY=Math.min(...ys), maxY=Math.max(...ys);
+  const pw=maxX-minX||1, ph=maxY-minY||1;
+  bvScale=Math.min(c.width/pw, c.height/ph)*0.92;
+  bvOX=(c.width  - pw*bvScale)/2 - minX*bvScale;
+  bvOY=(c.height - ph*bvScale)/2 - minY*bvScale;
+  bvBoardW=pw;
+}
+
+// Net index: net -> [pins]  (built once per board load)
+let netPinIndex={};
+function buildNetIndex(){
+  netPinIndex={};
+  if(!bvData) return;
+  bvData.pins.forEach(p=>{
+    if(!p.net) return;
+    (netPinIndex[p.net]||(netPinIndex[p.net]=[])).push(p);
+  });
+}
+
+let selectedNet=null;  // clicked net (locked)
+
+function rotateBV(){
+  bvRot = (bvRot + 90) % 360;
+  fitBV(); drawBV();
+}
+
+function getPinExtents(p){
+  if(p.outline && p.outline.length){
+    return {
+      halfW: Math.max(...p.outline.map(pt=>Math.abs(pt[0]))),
+      halfH: Math.max(...p.outline.map(pt=>Math.abs(pt[1])))
+    };
+  }
+  const r=(p.radius && p.radius>0.1)?p.radius*0.55:6;
+  return {halfW:r, halfH:r};
+}
+
+function drawBV(){
+  if(!bvData)return;
+  bvLabelHits=[];
+  const c=document.getElementById('bv-canvas');
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle='#e8f5f0'; ctx.fillRect(0,0,c.width,c.height); // always green bg
+  if(bvRot||bvMirror){
+    ctx.save();
+    ctx.translate(c.width/2, c.height/2);
+    if(bvMirror) ctx.scale(-1,1);
+    if(bvRot) ctx.rotate(bvRot * Math.PI/180);
+    ctx.translate(-c.width/2, -c.height/2);
+  }
+
+  let sideCompsArr=bvData.components.filter(x=>x.side===bvSide||x.side===2);
+  // If current side is empty, show all components
+  if(!sideCompsArr.length) sideCompsArr=bvData.components;
+  const sideComps=new Set(sideCompsArr.map(x=>x.ref));
+  let sidePins=bvData.pins.filter(p=>sideComps.has(p.ref)||(p.side===bvSide||p.side===2));
+  if(!sidePins.length) sidePins=bvData.pins;
+
+  const compPinMap={};
+  sidePins.forEach(p=>{ (compPinMap[p.ref]||(compPinMap[p.ref]=[])).push(p); });
+
+  // Active net = selectedNet (click) or hoverNet
+  const activeNet = selectedNet || hoverNet;
+
+  // ── Board outline ──────────────────────────────────────────────
+  if(bvData.outline&&bvData.outline.length>0){
+    ctx.strokeStyle='#444'; ctx.lineWidth=1.5;
+    if(bvData.outline_type==='segments'){
+      bvData.outline.forEach(seg=>{
+        ctx.beginPath();
+        ctx.moveTo(seg[0]*bvScale+bvOX, seg[1]*bvScale+bvOY);
+        ctx.lineTo(seg[2]*bvScale+bvOX, seg[3]*bvScale+bvOY);
+        ctx.stroke();
+      });
+    } else {
+      ctx.beginPath();
+      bvData.outline.forEach((pt,i)=>{
+        const x=pt[0]*bvScale+bvOX, y=pt[1]*bvScale+bvOY;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.closePath(); ctx.fillStyle='#eaede8'; ctx.fill(); ctx.stroke();
+    }
+  }
+
+  // ── Component outlines ─────────────────────────────────────────
+  Object.entries(compPinMap).forEach(([ref,allPins])=>{
+    // Step 1: basic filter — remove ghost pins at origin
+    let validPins=allPins.filter(p=>
+      typeof p.x==='number' && !isNaN(p.x) &&
+      Math.abs(p.x) > 0.1
+    );
+
+    // Step 2: outlier rejection — remove pins far from component cluster
+    if(validPins.length > 2){
+      const avgX=validPins.reduce((s,p)=>s+p.x,0)/validPins.length;
+      const avgY=validPins.reduce((s,p)=>s+p.y,0)/validPins.length;
+      const maxDist=bvBoardW * 0.1;
+      validPins=validPins.filter(p=>Math.hypot(p.x-avgX,p.y-avgY)<maxDist);
+    } else if(validPins.length===2){
+      const dist=Math.hypot(validPins[0].x-validPins[1].x, validPins[0].y-validPins[1].y);
+      if(dist > bvBoardW*0.1) validPins=[validPins[0]];
+    }
+
+    if(validPins.length===0) return;
+
+    const onNet=activeNet&&validPins.some(p=>p.net===activeNet);
+
+    // Per-pin extents using getPinExtents
+    let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+    for(const p of validPins){
+      const {halfW,halfH}=getPinExtents(p);
+      if(p.x-halfW<minX) minX=p.x-halfW;
+      if(p.x+halfW>maxX) maxX=p.x+halfW;
+      if(p.y-halfH<minY) minY=p.y-halfH;
+      if(p.y+halfH>maxY) maxY=p.y+halfH;
+    }
+
+    const sx=minX*bvScale+bvOX, sy=minY*bvScale+bvOY;
+    const sw=(maxX-minX)*bvScale, sh=(maxY-minY)*bvScale;
+    if(sw<1&&sh<1) return;
+    const pins=validPins;
+    const pinHalfW=getPinExtents(validPins[0]).halfW;
+    const pinHalfH=getPinExtents(validPins[0]).halfH;
+
+    const isActiveComp = highlighted.has(ref);
+
+    // Draw component outline — tight around pins
+    if(onNet){
+      ctx.fillStyle='rgba(255,210,0,0.18)';
+      ctx.strokeStyle='#dd6600'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.rect(sx,sy,sw,sh);
+      ctx.fill(); ctx.stroke();
+    } else if(isActiveComp){
+      ctx.fillStyle='rgba(255,100,0,0.12)';
+      ctx.strokeStyle='#ff6600'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.rect(sx,sy,sw,sh);
+      ctx.fill(); ctx.stroke();
+    } else {
+      ctx.strokeStyle= bvSide===0 ? 'rgba(30,60,120,0.5)' : 'rgba(80,80,90,0.5)';
+      ctx.lineWidth=0.7;
+
+      if(pins.length === 2) {
+        // OBB — oriented bounding box for 2-pin parts (resistors, caps)
+        const p1 = pins[0], p2 = pins[1];
+        const dx2 = (p2.x - p1.x)*bvScale;
+        const dy2 = (p2.y - p1.y)*bvScale;
+        const angle = Math.atan2(dy2, dx2);
+        const len = Math.sqrt(dx2*dx2 + dy2*dy2);
+        const cx2 = ((p1.x+p2.x)/2)*bvScale + bvOX;
+        const cy2 = ((p1.y+p2.y)/2)*bvScale + bvOY;
+        const pad = Math.max(3, pinHalfW * bvScale * 1.2);
+        const bw = len + pad*2;
+        const bh = pad*2;
+        ctx.save();
+        ctx.translate(cx2, cy2);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.rect(-bw/2, -bh/2, bw, bh);
+        ctx.stroke();
+        ctx.restore();
+      } else if(sw > 1.5 || sh > 1.5) {
+        // AABB for multi-pin parts
+        ctx.beginPath(); ctx.rect(sx,sy,sw,sh);
+        ctx.stroke();
+      }
+    }
+
+    const minPx=Math.min(sw,sh);
+    if(onNet||(minPx>16&&bvScale>0.015)){
+      ctx.fillStyle=onNet?'#993300':'#334466';
+      const fs=onNet?11:Math.min(10,Math.max(6,minPx*0.28));
+      ctx.font=(onNet?'bold ':'')+fs+'px monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      if(bvMirror){
+        // Un-mirror text so it reads normally
+        ctx.save();
+        ctx.translate(sx+sw/2, sy+sh/2);
+        ctx.scale(-1,1);
+        ctx.fillText(ref, 0, 0);
+        ctx.restore();
+      } else {
+        ctx.fillText(ref, sx+sw/2, sy+sh/2);
+      }
+      // Store label hitbox for click detection
+      const tw=ctx.measureText(ref).width;
+      const th=fs+4;
+      bvLabelHits.push({ref, x:sx+sw/2-tw/2, y:sy+sh/2-th/2, w:tw, h:th});
+    }
+  });
+
+  // ── Pins ───────────────────────────────────────────────────────
+  const GND_NETS=new Set(['GND','PGND','AGND','GND_MLB']);
+  sidePins.forEach(p=>{
+    const px=p.x*bvScale+bvOX, py=p.y*bvScale+bvOY;
+    const isGnd=GND_NETS.has(p.net);
+    const isActive=p.net===activeNet;
+
+    const isHighlightedComp = highlighted.has(p.ref);
+    const isHighlightedNet  = p.net && highlighted.has(p.net) && !isHighlightedComp;
+
+    let fill, stroke;
+    if(isActive || isHighlightedComp) { fill='#ff6600'; stroke='#ffaa00'; }
+    else if(isHighlightedNet)          { fill='#22bb44'; stroke='#44dd66'; }
+    else if(isGnd)                     { fill='#999';    stroke='#bbb'; }
+    else                               { fill='#5577aa'; stroke='#8899cc'; }
+
+    if(p.outline&&p.outline.length>=2){
+      ctx.beginPath();
+      p.outline.forEach((pt,i)=>{
+        const x=px+pt[0]*bvScale, y=py+pt[1]*bvScale;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.closePath();
+      ctx.fillStyle=fill; ctx.fill();
+      if(bvScale>0.015){ ctx.strokeStyle=stroke; ctx.lineWidth=0.4; ctx.stroke(); }
+    } else {
+      // No PIN_OUTLINE — draw square pad (like NextBV dot/small rect)
+      const rBoard = (p.radius && p.radius > 0.1) ? p.radius * 0.55 : bvBoardW * 0.002;
+      const r = Math.max(1.0, rBoard * bvScale);
+      ctx.beginPath();
+      ctx.rect(px-r, py-r, r*2, r*2);
+      ctx.fillStyle=fill; ctx.fill();
+      if(r>1.5){ ctx.strokeStyle=stroke; ctx.lineWidth=0.3; ctx.stroke(); }
+    }
+
+    // Pin label when zoomed in on highlighted component
+    if(isHighlightedComp && bvScale > 0.035){
+      ctx.save();
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=4;
+      ctx.font='bold 10px monospace';
+      ctx.fillStyle='#ffffff';
+      if(bvMirror){
+        ctx.save(); ctx.translate(px,py-6); ctx.scale(-1,1);
+        ctx.fillText(p.pin, 0, 0); ctx.restore();
+        if(p.net){
+          ctx.font='9px sans-serif';
+          ctx.fillStyle=p.net.includes('GND')?'#999999':'#88ddff';
+          ctx.save(); ctx.translate(px,py+6); ctx.scale(-1,1);
+          ctx.fillText(p.net, 0, 0); ctx.restore();
+        }
+      } else {
+        ctx.fillText(p.pin, px, py-6);
+        if(p.net){
+          ctx.font='9px sans-serif';
+          ctx.fillStyle=p.net.includes('GND')?'#999999':'#88ddff';
+          ctx.fillText(p.net, px, py+6);
+        }
+      }
+      ctx.restore();
+    }
+  });
+
+  // ── Ratsnest lines (when net selected/hovered) ─────────────────
+  if(activeNet && netPinIndex[activeNet]){
+    const netPins=netPinIndex[activeNet].filter(p=>sideComps.has(p.ref));
+    if(netPins.length>1){
+      // Draw lines from first pin to all others (star pattern like OBV)
+      const src=netPins[0];
+      const sx2=src.x*bvScale+bvOX, sy2=src.y*bvScale+bvOY;
+      ctx.strokeStyle=selectedNet?'rgba(220,30,30,0.55)':'rgba(220,30,30,0.3)';
+      ctx.lineWidth=selectedNet?0.8:0.5;
+      netPins.slice(1).forEach(p=>{
+        ctx.beginPath();
+        ctx.moveTo(sx2,sy2);
+        ctx.lineTo(p.x*bvScale+bvOX, p.y*bvScale+bvOY);
+        ctx.stroke();
+      });
+    }
+    // Net name label near cursor
+    if(hoverPin){
+      const lx=hoverPin.x*bvScale+bvOX, ly=hoverPin.y*bvScale+bvOY;
+      ctx.font='bold 11px monospace';
+      const tw=ctx.measureText(activeNet).width;
+      ctx.fillStyle='rgba(255,255,255,0.9)';
+      ctx.fillRect(lx+8,ly-18,tw+8,16);
+      ctx.strokeStyle='#aaa'; ctx.lineWidth=0.5;
+      ctx.strokeRect(lx+8,ly-18,tw+8,16);
+      ctx.fillStyle='#cc2200';
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillText(activeNet,lx+12,ly-10);
+    }
+  }
+
+  if(bvRot||bvMirror) ctx.restore();
+  document.getElementById('bv-status').textContent=
+    `${sideComps.size} components | ${sidePins.length} pins | ${bvSide===0?'TOP':'BOTTOM'}`+
+    (activeNet?` | 🔴 ${activeNet}`:'');
+}
+
+const bvc=document.getElementById('bv-canvas');
+bvc.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const f=e.deltaY<0?1.15:0.87;
+  const r=bvc.getBoundingClientRect();
+  const _dmx=e.clientX-r.left;
+  const mx=bvMirror?(bvc.width-_dmx):_dmx, my=e.clientY-r.top;
+  bvOX=mx-(mx-bvOX)*f;bvOY=my-(my-bvOY)*f;bvScale*=f;drawBV();
+},{passive:false});
+bvc.addEventListener('mousedown',e=>{bvDrag=true;bvDX=e.clientX;bvDY=e.clientY;bvMoved=false;bvc.style.cursor='grabbing';});
+bvc.addEventListener('mousemove',e=>{
+  if(bvDrag){
+    const dx=e.clientX-bvDX, dy=e.clientY-bvDY;
+    if(Math.abs(dx)>4||Math.abs(dy)>4) bvMoved=true;  // threshold: 4px = drag
+    bvOX+=dx;bvOY+=dy;bvDX=e.clientX;bvDY=e.clientY;drawBV();
+  }
+});
+bvc.addEventListener('mouseup',()=>{bvDrag=false;bvc.style.cursor='crosshair';setTimeout(()=>bvMoved=false,0);});
+bvc.addEventListener('mouseleave',()=>{
+  bvDrag=false; bvc.style.cursor='crosshair';
+  document.getElementById('bv-tooltip').style.display='none';
+  if(hoverNet!==null){ hoverNet=null; hoverComp=null; hoverPin=null; if(!selectedNet) drawBV(); }
+});
+bvc.addEventListener('click',e=>{
+  if(!bvData||bvDrag||bvMoved) return;
+  const r=bvc.getBoundingClientRect();
+  // Un-mirror coordinates when mirror active
+  const _rawX=e.clientX-r.left, _rawY=e.clientY-r.top;
+  const _ex = bvMirror ? (bvc.width - _rawX) : _rawX;
+  const wx=(_ex-bvOX)/bvScale, wy=(_rawY-bvOY)/bvScale;
+
+  // Label hits — also un-mirrored
+  const cx2=_ex, cy2=_rawY;
+  for(const lh of bvLabelHits){
+    if(cx2>=lh.x&&cx2<=lh.x+lh.w&&cy2>=lh.y&&cy2<=lh.y+lh.h){
+      highlightComp(lh.ref, false);
+      showCompInfo(lh.ref);
+      printCompPinout(lh.ref);
+      return;
+    }
+  }
+
+  const sideComps=new Set(bvData.components.filter(c=>c.side===bvSide).map(c=>c.ref));
+  // Find nearest pin
+  const sidePins=bvData.pins.filter(p=>sideComps.has(p.ref));
+  let bestPin=null, bestD=9e9;
+  sidePins.forEach(p=>{const d=Math.hypot(p.x-wx,p.y-wy); if(d<bestD){bestD=d;bestPin=p;}});
+  // threshold in board units: 30px screen regardless of zoom
+  const threshold = Math.max(15, 35/bvScale);
+  const tip=document.getElementById('bv-tooltip');
+  if(bestPin && bestD<threshold){
+    // Toggle selection
+    if(selectedNet===bestPin.net && selectedComp===bestPin.ref){
+      selectedNet=null; selectedComp=null;
+      tip.style.display='none';
+      document.getElementById('bv-highlight-bar').style.display='none';
+    } else {
+      selectedNet=bestPin.net; selectedComp=bestPin.ref;
+      const nets=[...new Set(sidePins.filter(p=>p.ref===bestPin.ref).map(p=>p.net).filter(Boolean))];
+      tip.innerHTML=`<b style="color:#fff;font-size:13px">${bestPin.ref}</b><br><span style="color:#60a5fa;font-size:10px">${nets.slice(0,6).join('<br>')||'—'}</span>`;
+      tip.style.display='block';
+      tip.style.left=(e.clientX-r.left+14)+'px';
+      tip.style.top =(e.clientY-r.top-8)+'px';
+      const bar=document.getElementById('bv-highlight-bar');
+      bar.style.display='block';
+      bar.textContent=`📍 ${bestPin.ref}  ·  ${bestPin.net||'—'}`;
+      highlightComp(bestPin.ref, false);
+      showCompInfo(bestPin.ref);
+      printCompPinout(bestPin.ref);
+      return;
+    }
+
+    // Click inside component bbox (no pin hit) → show pinout
+    if(bvData){
+      const mx2=(ex-bvOX)/bvScale, my2=(ey-bvOY)/bvScale;
+      for(const comp of bvData.components){
+        const cpins=bvData.pins.filter(p=>p.ref===comp.ref&&(p.x||p.y));
+        if(!cpins.length) continue;
+        const xs=cpins.map(p=>p.x), ys=cpins.map(p=>p.y);
+        const pad=30;
+        if(mx2>=Math.min(...xs)-pad&&mx2<=Math.max(...xs)+pad&&
+           my2>=Math.min(...ys)-pad&&my2<=Math.max(...ys)+pad){
+          highlightComp(comp.ref, false);
+          showCompInfo(comp.ref);
+          printCompPinout(comp.ref);
+          return;
+        }
+      }
+    }
+  } else {
+    // Click empty = clear
+    selectedNet=null; selectedComp=null;
+    tip.style.display='none';
+    document.getElementById('bv-highlight-bar').style.display='none';
+    highlighted.clear();
+  }
+  drawBV();
+});
+
+let hoverNet=null, hoverComp=null, hoverPin=null, selectedComp=null, bvMoved=false;
+let chatHistory = [];  // full conversation history
+
+function hoverHighlight(e){
+  if(!bvData) return;
+  if(bvDrag) return;
+  const r=bvc.getBoundingClientRect();
+  const _hRawX=e.clientX-r.left;
+  const _hEx = bvMirror ? (bvc.width - _hRawX) : _hRawX;
+  const wx=(_hEx-bvOX)/bvScale, wy=(e.clientY-r.top-bvOY)/bvScale;
+
+  const sideComps=new Set(bvData.components.filter(c=>c.side===bvSide).map(c=>c.ref));
+  const sidePins=bvData.pins.filter(p=>sideComps.has(p.ref));
+  let bestPin=null, bestD=9e9;
+  sidePins.forEach(p=>{
+    const d=Math.hypot(p.x-wx,p.y-wy);
+    if(d<bestD){bestD=d;bestPin=p;}
+  });
+
+  const threshold=Math.max(12, 30/bvScale);
+  const tip=document.getElementById('bv-tooltip');
+
+  if(bestPin && bestD<threshold){
+    const changed=(bestPin.net!==hoverNet||bestPin.ref!==hoverComp);
+    hoverNet=bestPin.net; hoverComp=bestPin.ref; hoverPin=bestPin;
+    if(changed && !selectedNet) drawBV();
+
+    // Tooltip
+    const allNets=[...new Set(bvData.pins.filter(p=>p.ref===hoverComp).map(p=>p.net).filter(Boolean))];
+    const netPins=netPinIndex[hoverNet]||[];
+    const sideCount=netPins.filter(p=>sideComps.has(p.ref)).length;
+    tip.innerHTML=
+      `<b style="color:#111;font-size:13px">${hoverComp}</b> `+
+      `<span style="color:#888;font-size:10px">Pin ${bestPin.pin}</span><br>`+
+      `<span style="color:#cc2200;font-weight:bold;font-size:12px">${hoverNet||'—'}</span>`+
+      (sideCount>1?` <span style="color:#888;font-size:10px">(${sideCount} pins)</span>`:'')+'<br>'+
+      `<span style="color:#667;font-size:10px">${allNets.filter(n=>n!==hoverNet).slice(0,3).join('  ·  ')}</span>`;
+    tip.style.display='block';
+    const lx=e.clientX-r.left, ly=e.clientY-r.top;
+    tip.style.left=(lx>r.width*0.6?lx-260:lx+14)+'px';
+    tip.style.top=Math.max(8,ly-10)+'px';
+  } else {
+    if(hoverNet!==null){
+      hoverNet=null; hoverComp=null; hoverPin=null;
+      if(!selectedNet) drawBV();
+    }
+    tip.style.display='none';
+  }
+}
+
+function highlightComp(ref, jumpTo=false){
+  if(!bvData)return;
+
+  // Exact match, then partial (U7700 → U7700A, etc.)
+  let resolvedRef = ref;
+  let allPins = bvData.pins.filter(p=>p.ref===ref);
+  if(!allPins.length){
+    const match = bvData.components.find(co=>co.ref.startsWith(ref)||ref.startsWith(co.ref));
+    if(match){ resolvedRef=match.ref; allPins=bvData.pins.filter(p=>p.ref===resolvedRef); }
+  }
+
+  highlighted.clear();
+  highlighted.add(resolvedRef);
+  const nets=[...new Set(allPins.map(p=>p.net).filter(Boolean))];
+  nets.forEach(n=>highlighted.add(n));
+
+  if(jumpTo && allPins.length){
+    // Auto-flip to correct side
+    const comp = bvData.components.find(co=>co.ref===resolvedRef);
+    if(comp && comp.side !== bvSide){
+      bvSide = comp.side;
+      document.getElementById('btn-flip').textContent = bvSide===0?'TOP':'BTM';
+    }
+    // Filter pins to current side after flip
+    const sideComps = new Set(bvData.components.filter(co=>co.side===bvSide).map(co=>co.ref));
+    const sidePins = allPins.filter(p=>sideComps.has(p.ref));
+    const usePins = sidePins.length ? sidePins : allPins;
+    const cx=usePins.reduce((s,p)=>s+p.x,0)/usePins.length;
+    const cy=usePins.reduce((s,p)=>s+p.y,0)/usePins.length;
+    const cv=document.getElementById('bv-canvas');
+    bvOX=cv.width/2-cx*bvScale;
+    bvOY=cv.height/2-cy*bvScale;
+  }
+  drawBV();
+}
+
+function bvZoom(f){
+  const c=document.getElementById('bv-canvas');
+  bvOX=c.width/2-(c.width/2-bvOX)*f;
+  bvOY=c.height/2-(c.height/2-bvOY)*f;
+  bvScale*=f;drawBV();
+}
+function toggleMirror(){
+  bvMirror=!bvMirror;
+  const btn=document.getElementById('btn-mirror');
+  btn.style.color=bvMirror?'#60a5fa':'';
+  drawBV();
+}
+
+function toggleSide(){
+  bvSide=1-bvSide;
+  document.getElementById('btn-side').title=bvSide===0?'BOTTOM':'TOP';
+  fitBV(); drawBV();  // keep highlighted — don't clear
+}
+
+// ── Schematic ─────────────────────────────────────
+function showBV(){document.getElementById('bv-view').style.display='flex';document.getElementById('sch-view').style.display='none';document.getElementById('tab-bv').classList.add('active');document.getElementById('tab-sch').classList.remove('active');}
+function showSCH(){document.getElementById('bv-view').style.display='none';document.getElementById('sch-view').style.display='flex';document.getElementById('tab-sch').classList.add('active');document.getElementById('tab-bv').classList.remove('active');if(schPages.length)loadSchPage(schPage);}
+
+function fitSch(){
+  const sc=document.getElementById('sch-content');
+  const img=document.getElementById('sch-img');
+  if(!img.naturalWidth||!img.naturalHeight)return;
+  // Wait for container to have real dimensions
+  const cw=sc.clientWidth||sc.offsetWidth||800;
+  const ch=sc.clientHeight||sc.offsetHeight||600;
+  schScale=Math.min(cw/img.naturalWidth, ch/img.naturalHeight)*0.96;
+  schX=Math.max(0,(cw - img.naturalWidth*schScale)/2);
+  schY=Math.max(0,(ch - img.naturalHeight*schScale)/2);
+  applyS();
+}
+
+function loadSchPage(n){
+  schPage=Math.max(0,Math.min(n,schPages.length-1));
+  const img=document.getElementById('sch-img');
+  img.style.width='';  // reset any inline width
+  img.onload=()=>{
+    // small delay ensures container layout is settled
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>fitSch()); });
+  };
+  img.src='/img?path='+encodeURIComponent(schPages[schPage])+'&t='+Date.now();
+  const nav=document.getElementById('page-nav');
+  nav.style.display=schPages.length>1?'flex':'none';
+  document.getElementById('page-label').textContent=`Page ${schPage+1} of ${schPages.length}`;
+}
+function prevPage(){loadSchPage(schPage-1);}
+function nextPage(){loadSchPage(schPage+1);}
+function applyS(){document.getElementById('sch-wrap').style.transform=`translate(${schX}px,${schY}px) scale(${schScale})`;}
+
+const sc=document.getElementById('sch-content');
+sc.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const f=e.deltaY<0?1.12:0.89;
+  const r=sc.getBoundingClientRect();
+  const mx=e.clientX-r.left,my=e.clientY-r.top;
+  schX=mx-(mx-schX)*f;schY=my-(my-schY)*f;schScale*=f;applyS();
+},{passive:false});
+sc.addEventListener('mousedown',e=>{schDrag=true;schDX=e.clientX-schX;schDY=e.clientY-schY;sc.classList.add('grabbing');});
+sc.addEventListener('mousemove',e=>{if(schDrag){schX=e.clientX-schDX;schY=e.clientY-schDY;applyS();}});
+sc.addEventListener('mouseup',()=>{schDrag=false;sc.classList.remove('grabbing');});
+sc.addEventListener('mouseleave',()=>{schDrag=false;sc.classList.remove('grabbing');});
+
+// ── Search ─────────────────────────────────────────
+let st=null;
+function onSearch(v){clearTimeout(st);if(!v.trim()||!board){hideSearch();return;}st=setTimeout(()=>doSearch(v.trim().toUpperCase()),280);}
+function onSKey(e){if(e.key==='Escape')hideSearch();if(e.key==='Enter'){const v=e.target.value.trim();if(v)doSearch(v.toUpperCase());}}
+function keywordHighlight(term){
+  // Highlight ALL components and nets that contain the keyword
+  if(!bvData) return;
+  const kw = term.toLowerCase();
+  highlighted.clear();
+  selectedNet = null;
+
+  // Match component refs containing keyword (case-insensitive substring)
+  bvData.components.forEach(c=>{
+    if(c.ref.toLowerCase().includes(kw)) highlighted.add(c.ref);
+  });
+
+  // Match net names containing keyword
+  (bvData.nets||[]).forEach(n=>{
+    if(n.name.toLowerCase().includes(kw)){
+      highlighted.add(n.name);
+      bvData.pins.filter(p=>p.net===n.name).forEach(p=>highlighted.add(p.ref));
+    }
+  });
+
+  // Match pin names containing keyword
+  bvData.pins.forEach(p=>{
+    if((p.pin||'').toLowerCase().includes(kw)) highlighted.add(p.ref);
+  });
+
+  const count = highlighted.size;
+  drawBV();
+  return count;
+}
+
+async function doSearch(term, jump=false){
+  if(!board) return;
+  const res=await fetch(`/api/search/${board.board_number}/${encodeURIComponent(term)}`);
+  const data=await res.json();
+  const box=document.getElementById('search-results');
+  box.innerHTML='';
+
+  // Keyword highlight option (always show for multi-match)
+  if(bvData){
+    const matchCount = (() => {
+      const kw = term.toUpperCase();
+      let n = 0;
+      const kw2 = term.toLowerCase();
+      bvData.components.forEach(c=>{ if(c.ref.toLowerCase().includes(kw2)) n++; });
+      (bvData.nets||[]).forEach(net=>{ if(net.name.toLowerCase().includes(kw2)) n++; });
+      return n;
+    })();
+    if(matchCount > 1){
+      const d=document.createElement('div');d.className='sri';
+      d.innerHTML=`🔍 Highlight all <b>${matchCount}</b> matches for "<b>${term}</b>" on board`;
+      d.onclick=()=>{showBV(); keywordHighlight(term); hideSearch();};
+      box.appendChild(d);
+    }
+  }
+
+  // Exact component
+  if(data.in_boardview){
+    const d=document.createElement('div');d.className='sri';
+    d.innerHTML=`🔲 Component <b>${term}</b>`;
+    d.onclick=()=>{showBV();highlightComp(term,true);hideSearch();};
+    box.appendChild(d);
+  }
+  // Partial component matches
+  (data.bv_comps||[]).filter(r=>r!==term).slice(0,4).forEach(ref=>{
+    const d=document.createElement('div');d.className='sri';
+    d.innerHTML=`🔲 Component <b>${ref}</b>`;
+    d.onclick=()=>{showBV();highlightComp(ref,true);hideSearch();};
+    box.appendChild(d);
+  });
+  // Net matches
+  (data.bv_nets||[]).slice(0,6).forEach(net=>{
+    const d=document.createElement('div');d.className='sri';
+    d.innerHTML=`<span style="color:#88ddaa">●</span> Net <b style="color:#88ddaa">${net}</b>`;
+    d.onclick=()=>{showBV();clickNet(net);hideSearch();};
+    box.appendChild(d);
+  });
+  // Schematic pages
+  (data.pages||[]).slice(0,8).forEach(p=>{
+    const d=document.createElement('div');d.className='sri';
+    d.textContent=`📄 Schematic Page ${p}`;
+    d.onclick=()=>{showSCH();loadSchPage(p-1);hideSearch();};
+    box.appendChild(d);
+  });
+  if(!box.children.length){
+    const d=document.createElement('div');d.className='sri';
+    d.style.color='#555';d.textContent='Not found';
+    box.appendChild(d);
+  }
+  box.style.display='block';
+
+  if(jump){
+    if(data.in_boardview) highlightComp(term,true);
+    else if((data.bv_nets||[]).length===1) clickNet(data.bv_nets[0]);
+    else if((data.bv_comps||[]).length===1) highlightComp(data.bv_comps[0],true);
+  }
+}
+function hideSearch(){document.getElementById('search-results').style.display='none';}
+document.addEventListener('click',e=>{if(!document.getElementById('search-wrap').contains(e.target))hideSearch();});
+
+// ── Chat ──────────────────────────────────────────
+function addMsg(role,text){
+  const box=document.getElementById('msgs');
+  const d=document.createElement('div');d.className=`msg ${role}`;
+  const html=text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')
+    .replace(/\b(PP[0-9A-Z_]{2,30}|LCDBKLT[0-9A-Z_]{0,25}|LCD[0-9A-Z_]{2,25}|BKLT[0-9A-Z_]{2,30}|LUXE_[0-9A-Z_]{2,25}|LED_PWR[0-9A-Z_]*|BKLTCONN[0-9A-Z_]*|P[0-9][A-Z0-9_]{2,25}|GND|VBUS)\b/g,(_,n)=>`<span class="ctag" style="color:#88ddaa;border-color:#2a5a3a" onclick="clickNet('${n}')">${n}</span>`)
+    .replace(/\b([CRULQDFTYBIJZ][A-Z]?\d{1,4}[A-Z]?[0-9]?)\b/g,(_,r)=>`<span class="ctag" onclick="chatClickComp('${r}')">${r}</span>`);
+  d.innerHTML=html;box.appendChild(d);box.scrollTop=box.scrollHeight;
+}
+function printCompPinout(ref){
+  if(!bvData) return;
+  const pins=bvData.pins.filter(p=>p.ref===ref);
+  if(!pins.length) return;
+  const nets={};
+  pins.forEach(p=>{
+    const n=p.net||'NC';
+    if(!nets[n]) nets[n]=[];
+    nets[n].push(p.pin);
+  });
+  let html='<div style="text-align:left;direction:ltr">';
+  html+='<b style="color:#fff;font-size:13px">&#x1F532; '+ref+' Pinout ('+pins.length+' pins):</b><br>';
+  html+='<div style="max-height:200px;overflow-y:auto;margin-top:6px;font-size:11px;font-family:monospace;background:#0a0a0a;padding:6px;border-radius:4px;border:1px solid #222">';
+  Object.keys(nets).sort().forEach(function(net){
+    const plist=nets[net].length>4?nets[net].slice(0,4).join(',')+',…':nets[net].join(',');
+    const col=net.indexOf('GND')>=0?'#888':'#60a5fa';
+    let row='<div style="display:flex;gap:8px;margin:2px 0"><span style="color:#666;min-width:55px">['+plist+']</span>';
+    if(net!=='NC'){
+      row+='<span onclick="clickNet(\''+net+'\')" style="cursor:pointer;color:'+col+';font-weight:bold">'+net+'</span>';
+    } else {
+      row+='<span style="color:#555">'+net+'</span>';
+    }
+    row+='</div>';
+    html+=row;
+  });
+  html+='</div></div>';
+  // Show in right panel (bv-highlight-bar area) instead of chat
+  let panel = document.getElementById('comp-pinout-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.id = 'comp-pinout-panel';
+    panel.style.cssText = 'position:fixed;top:50px;right:10px;width:260px;max-height:70vh;overflow-y:auto;background:#111;border:1px solid #2a3a55;border-radius:8px;padding:10px;z-index:200;font-size:11px;';
+    document.body.appendChild(panel);
+  }
+  panel.innerHTML = html;
+  panel.style.display = 'block';
+}
+
+async function showCompInfo(ref){
+  if(!board) return;
+  const tip = document.getElementById('bv-tooltip');
+  const pins = bvData.pins.filter(p=>p.ref===ref);
+  const nets = [...new Set(pins.map(p=>p.net).filter(Boolean))].slice(0,5);
+  // Show loading state
+  tip.innerHTML = `<b style="color:#fff;font-size:13px">${ref}</b><br><span style="color:#aaa;font-size:10px">Loading info...</span>`;
+  tip.style.display = 'block';
+  // Ask server for component info
+  try {
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        msg: `What is component ${ref} on board ${board.board_number}? Answer in one sentence — chip type and function only.`,
+        ctx: `Board: ${board.board_number} ${board.model||''}. Nets: ${nets.join(', ')}`
+      })
+    });
+    const data = await res.json();
+    tip.innerHTML = `<b style="color:#fff;font-size:13px">${ref}</b><br><span style="color:#60a5fa;font-size:10px">${nets.join(', ')}</span><br><span style="color:#ccc;font-size:11px;line-height:1.4">${data.reply||''}</span>`;
+  } catch(e) {
+    tip.innerHTML = `<b style="color:#fff;font-size:13px">${ref}</b><br><span style="color:#60a5fa;font-size:10px">${nets.join(', ')}</span>`;
+  }
+}
+
+function clickComp(ref){
+  // Highlight in boardview immediately
+  if(bvData){ highlightComp(ref, true); }
+  // Search without triggering another highlight
+  document.getElementById('sch-search').value=ref;
+  doSearch(ref, false);
+}
+
+function chatClickComp(ref){
+  // From chat: go straight to boardview + highlight, no dropdown
+  if(bvData){
+    showBV();
+    highlightComp(ref, true);
+    // Show tooltip
+    const allPins = bvData.pins.filter(p=>p.ref===ref);
+    const nets = [...new Set(allPins.map(p=>p.net).filter(Boolean))].slice(0,5);
+    const tip = document.getElementById('bv-tooltip');
+    tip.innerHTML = `<b style="color:#fff;font-size:13px">${ref}</b><br><span style="color:#60a5fa;font-size:10px">${nets.join('<br>')}</span>`;
+    tip.style.display = 'block';
+    tip.style.left = '20px';
+    tip.style.top  = '40px';
+  }
+}
+
+function clickNet(net){
+  if(!bvData) return;
+  showBV();
+
+  // Exact match, then fuzzy
+  let resolvedNet = net;
+  let netPins = netPinIndex[net] || [];
+  if(!netPins.length){
+    const parts = net.split('_').filter(p=>p.length>2);
+    let bestNet=null, bestScore=0;
+    Object.keys(netPinIndex).forEach(n=>{
+      let score=0; parts.forEach(p=>{if(n.includes(p))score++;});
+      if(score>bestScore){bestScore=score;bestNet=n;}
+    });
+    if(bestNet&&bestScore>0){ resolvedNet=bestNet; netPins=netPinIndex[bestNet]||[]; }
+  }
+
+  if(!netPins.length){
+    const bar=document.getElementById('bv-highlight-bar');
+    bar.style.display='block';
+    bar.textContent=`⚠ Net "${net}" not found`;
+    return;
+  }
+
+  highlighted.clear();
+  highlighted.add(resolvedNet);
+  selectedNet = resolvedNet;
+  netPins.forEach(p=>highlighted.add(p.ref));
+
+  // Auto-flip: pick side with most pins for this net
+  const topCount = netPins.filter(p=>{const co=bvData.components.find(c=>c.ref===p.ref);return co&&co.side===0;}).length;
+  const btmCount = netPins.filter(p=>{const co=bvData.components.find(c=>c.ref===p.ref);return co&&co.side===1;}).length;
+  const bestSide = btmCount > topCount ? 1 : 0;
+  if(bestSide !== bvSide){
+    bvSide = bestSide;
+    document.getElementById('btn-side').title = bvSide===0?'BOTTOM':'TOP';
+  }
+
+  const sideComps=new Set(bvData.components.filter(co=>co.side===bvSide).map(co=>co.ref));
+  const sidePins=netPins.filter(p=>sideComps.has(p.ref));
+  const usePins=sidePins.length?sidePins:netPins;
+
+  const cx=usePins.reduce((s,p)=>s+p.x,0)/usePins.length;
+  const cy=usePins.reduce((s,p)=>s+p.y,0)/usePins.length;
+  const cv=document.getElementById('bv-canvas');
+  bvOX=cv.width/2-cx*bvScale;
+  bvOY=cv.height/2-cy*bvScale;
+
+  drawBV();
+  const bar=document.getElementById('bv-highlight-bar');
+  bar.style.display='block';
+  const label=resolvedNet!==net?`🔴 ${resolvedNet} (≈${net})`:`🔴 ${resolvedNet}`;
+  bar.textContent=`${label}  ·  ${usePins.length} pins`;
+}
+
+function quick(s){document.getElementById('chat-input').value=s;sendMsg();}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+async function sendMsg(){
+  const inp=document.getElementById('chat-input');
+  const txt=inp.value.trim();if(!txt)return;
+  inp.value='';addMsg('user',txt);
+  const btn=document.getElementById('send-btn');btn.disabled=true;btn.textContent='...';
+  const ctx=board?`Board: ${board.board_number} | Model: ${board.model} | Chip: ${board.chip}`:'NO_BOARD_SELECTED';
+  // Add user message to history
+  chatHistory.push({role:'user', content: txt});
+  // Keep last 10 exchanges (20 messages)
+  if(chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:txt,board_context:ctx,history:chatHistory.slice(0,-1)})});
+    const data=await r.json();addMsg('ai',data.reply);
+    // Add AI reply to history
+    chatHistory.push({role:'assistant', content: data.reply});
+    const m=[...data.reply.matchAll(/\*\*([CRULQDFTYBIJZ]\d{1,4}[A-Z]?)\*\*/g)];
+    if(m.length&&bvData)highlightComp(m[0][1], true);
+  }catch(e){addMsg('ai','Select a board and describe the issue — I\'ll guide you step by step.');}
+  btn.disabled=false;btn.textContent='שלח';
+}
+
+window.addEventListener('resize',()=>{
+  if(bvData){const c=document.getElementById('bv-canvas'),w=document.getElementById('bv-view');c.width=w.clientWidth;c.height=w.clientHeight;drawBV();}
+});
+init();
+</script>
+</body>
+</html>

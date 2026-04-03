@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MacTech Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0d0f12;
+    --surface: #161a20;
+    --border:  #252a33;
+    --text:    #c8cdd6;
+    --muted:   #5a6275;
+    --accent:  #4ade80;
+    --warn:    #fb923c;
+    --danger:  #f87171;
+    --info:    #60a5fa;
+    --mono:    'IBM Plex Mono', monospace;
+    --sans:    'IBM Plex Sans', sans-serif;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: var(--sans);
+         font-size: 14px; min-height: 100vh; }
+
+  /* Layout */
+  .shell { display: grid; grid-template-columns: 200px 1fr; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border);
+             padding: 24px 0; display: flex; flex-direction: column; }
+  .logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border);
+          font-family: var(--mono); font-size: 13px; color: var(--accent);
+          letter-spacing: .05em; }
+  .logo span { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+  nav { padding: 16px 8px; flex: 1; }
+  nav a { display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+          border-radius: 6px; color: var(--muted); text-decoration: none;
+          font-size: 13px; transition: all .15s; cursor: pointer; }
+  nav a:hover, nav a.active { background: rgba(255,255,255,.05); color: var(--text); }
+  nav a.active { color: var(--accent); }
+  .nav-icon { width: 16px; text-align: center; }
+
+  /* Main */
+  main { padding: 32px; overflow-y: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+                color: var(--muted); margin-bottom: 12px; font-family: var(--mono); }
+
+  /* Stat grid */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat { background: var(--surface); border: 1px solid var(--border);
+          border-radius: 10px; padding: 16px 20px; }
+  .stat-val { font-size: 28px; font-weight: 600; font-family: var(--mono);
+              line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 12px; color: var(--muted); }
+  .stat-val.green { color: var(--accent); }
+  .stat-val.orange { color: var(--warn); }
+  .stat-val.red { color: var(--danger); }
+  .stat-val.blue { color: var(--info); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; color: var(--muted);
+       font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+       border-bottom: 1px solid var(--border); font-weight: 500; }
+  td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.04); }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px;
+           border-radius: 4px; font-size: 11px; font-family: var(--mono);
+           font-weight: 500; letter-spacing: .03em; }
+  .badge-green  { background: rgba(74,222,128,.1);  color: var(--accent); }
+  .badge-orange { background: rgba(251,146,60,.1);  color: var(--warn); }
+  .badge-red    { background: rgba(248,113,113,.1); color: var(--danger); }
+  .badge-blue   { background: rgba(96,165,250,.1);  color: var(--info); }
+  .badge-gray   { background: rgba(255,255,255,.06); color: var(--muted); }
+
+  /* Forms */
+  .form-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+  label { font-size: 11px; color: var(--muted); text-transform: uppercase;
+          letter-spacing: .06em; }
+  input, select, textarea {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); padding: 8px 10px; font-size: 13px;
+    font-family: var(--sans); outline: none; transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* Buttons */
+  button { cursor: pointer; border: none; border-radius: 6px; font-size: 13px;
+           font-family: var(--sans); font-weight: 500; padding: 8px 16px;
+           transition: all .15s; }
+  .btn-primary { background: var(--accent); color: #0a0f0c; }
+  .btn-primary:hover { background: #22c55e; }
+  .btn-ghost { background: rgba(255,255,255,.06); color: var(--text); }
+  .btn-ghost:hover { background: rgba(255,255,255,.1); }
+  .btn-danger { background: rgba(248,113,113,.15); color: var(--danger); }
+  .btn-danger:hover { background: rgba(248,113,113,.25); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  /* Code block */
+  .code-block { background: var(--bg); border: 1px solid var(--border);
+                border-radius: 6px; padding: 10px 14px; font-family: var(--mono);
+                font-size: 12px; color: var(--accent); word-break: break-all;
+                display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+  /* Feedback item */
+  .fb-item { border-bottom: 1px solid var(--border); padding: 12px 0; }
+  .fb-item:last-child { border: none; }
+  .fb-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .fb-note { color: var(--text); font-size: 13px; line-height: 1.5;
+             background: var(--bg); border-radius: 6px; padding: 8px 10px;
+             border-left: 3px solid var(--border); margin-top: 6px; }
+  .fb-meta { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  /* Login screen */
+  .login-screen { display: flex; align-items: center; justify-content: center;
+                  min-height: 100vh; padding: 20px; }
+  .login-card { background: var(--surface); border: 1px solid var(--border);
+                border-radius: 12px; padding: 32px; width: 100%; max-width: 360px; }
+  .login-title { font-family: var(--mono); font-size: 14px; color: var(--accent);
+                 margin-bottom: 24px; }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface);
+           border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px;
+           font-size: 13px; transform: translateY(80px); opacity: 0;
+           transition: all .3s; pointer-events: none; z-index: 999; max-width: 320px; }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.ok   { border-color: var(--accent); color: var(--accent); }
+  #toast.err  { border-color: var(--danger); color: var(--danger); }
+
+  /* Loading */
+  .loading { color: var(--muted); font-size: 13px; padding: 20px 0;
+             font-family: var(--mono); }
+  .dot-anim::after { content: '...'; animation: dots 1.2s infinite; }
+  @keyframes dots {
+    0%   { content: '.';   }
+    33%  { content: '..';  }
+    66%  { content: '...'; }
+  }
+
+  .empty { color: var(--muted); font-size: 13px; padding: 24px; text-align: center; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-title">MacTech // Admin</div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Email</label>
+      <input id="loginEmail" type="email" placeholder="admin@example.com">
+    </div>
+    <button class="btn-primary" style="width:100%" onclick="doLogin()">Sign in</button>
+    <div id="loginErr" style="color:var(--danger);font-size:12px;margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- Shell (hidden until logged in) -->
+<div class="shell" id="shell" style="display:none">
+  <aside class="sidebar">
+    <div class="logo">MacTech<br><span>Admin Panel</span></div>
+    <nav>
+      <a class="active" onclick="showPage('dashboard')" data-page="dashboard">
+        <span class="nav-icon">◈</span> Dashboard
+      </a>
+      <a onclick="showPage('feedback')" data-page="feedback">
+        <span class="nav-icon">◎</span> Feedback
+      </a>
+      <a onclick="showPage('invites')" data-page="invites">
+        <span class="nav-icon">◇</span> Invites
+      </a>
+      <a onclick="showPage('users')" data-page="users">
+        <span class="nav-icon">○</span> Users
+      </a>
+    </nav>
+  </aside>
+
+  <main>
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <h1>Dashboard</h1>
+      <p class="subtitle">Beta overview</p>
+      <div class="stats" id="statsGrid">
+        <div class="stat"><div class="stat-val green" id="statTotal">—</div><div class="stat-label">Total feedback</div></div>
+        <div class="stat"><div class="stat-val green" id="statHelpful">—</div><div class="stat-label">Helpful</div></div>
+        <div class="stat"><div class="stat-val orange" id="statWrong">—</div><div class="stat-label">Wrong diagnosis</div></div>
+        <div class="stat"><div class="stat-val red" id="statMissing">—</div><div class="stat-label">Missing schematic</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent feedback</div>
+        <div id="recentFeedback"><div class="loading dot-anim">Loading</div></div>
+      </div>
+    </div>
+
+    <!-- Feedback -->
+    <div class="page" id="page-feedback">
+      <h1>Feedback</h1>
+      <p class="subtitle">All submitted feedback from beta testers</p>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn-ghost btn-sm" onclick="filterFeedback('')">All</button>
+        <button class="btn-ghost btn-sm" onclick="filterFeedback('helpful')">✓ Helpful</button>
+        <button class="btn-ghost btn-sm" onclick="filterFeedback('wrong_diagnosis')">✗ Wrong diagnosis</button>
+        <button class="btn-ghost btn-sm" onclick="filterFeedback('missing_schematic')">⊘ Missing schematic</button>
+        <button class="btn-ghost btn-sm" onclick="filterFeedback('need_better_guidance')">? Need guidance</button>
+      </div>
+
+      <div class="card">
+        <div id="feedbackList"><div class="loading dot-anim">Loading</div></div>
+      </div>
+    </div>
+
+    <!-- Invites -->
+    <div class="page" id="page-invites">
+      <h1>Invite codes</h1>
+      <p class="subtitle">Generate and manage invite codes for beta testers</p>
+
+      <div class="card">
+        <div class="card-title">Generate new invite</div>
+        <div class="form-row">
+          <div class="field">
+            <label>Note (who is this for)</label>
+            <input id="inviteNote" placeholder="e.g. Rossmann forum user">
+          </div>
+          <div class="field" style="max-width:120px">
+            <label>Max uses</label>
+            <input id="inviteUses" type="number" value="1" min="1" max="100">
+          </div>
+          <button class="btn-primary" onclick="generateInvite()">Generate</button>
+        </div>
+        <div id="generatedCode" style="display:none;margin-top:12px">
+          <div class="code-block">
+            <span id="codeText"></span>
+            <button class="btn-ghost btn-sm" onclick="copyCode()">Copy</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px">
+            Share this link: <span id="inviteLink" style="color:var(--info);font-family:var(--mono);font-size:12px"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quick bulk generate</div>
+        <div class="form-row">
+          <div class="field" style="max-width:120px">
+            <label>Count</label>
+            <input id="bulkCount" type="number" value="10" min="1" max="100">
+          </div>
+          <div class="field">
+            <label>Note prefix</label>
+            <input id="bulkNote" placeholder="batch-march-2026">
+          </div>
+          <button class="btn-ghost" onclick="generateBulk()">Generate batch</button>
+        </div>
+        <div id="bulkCodes" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="page" id="page-users">
+      <h1>Users</h1>
+      <p class="subtitle">Beta testers — activity and usage</p>
+      <div class="card">
+        <div class="card-title">Technicians</div>
+        <table id="usersTable">
+          <thead>
+            <tr>
+              <th>Username</th><th>Role</th><th>Boards</th>
+              <th>Sessions</th><th>Last active</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody">
+            <tr><td colspan="6" class="loading dot-anim">Loading</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" id="userDetailCard" style="display:none">
+        <div class="card-title" id="userDetailTitle">User activity</div>
+        <div id="userDetailBody"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '';
+let TOKEN = localStorage.getItem('admin_token') || '';
+let feedbackData = [];
+let currentFilter = '';
+
+// ── Auth ───────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  if (!email) return;
+  const r = await fetch(API + '/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  const d = await r.json();
+  if (d.error) {
+    document.getElementById('loginErr').textContent = d.error;
+    return;
+  }
+  if (d.role !== 'admin') {
+    document.getElementById('loginErr').textContent = 'Admin access required.';
+    return;
+  }
+  TOKEN = d.token;
+  localStorage.setItem('admin_token', TOKEN);
+  showShell();
+}
+
+function showShell() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('shell').style.display = 'grid';
+  loadDashboard();
+}
+
+function authed() {
+  return { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelector(`[data-page="${name}"]`).classList.add('active');
+  if (name === 'feedback') loadFeedback();
+  if (name === 'users')    loadUsers();
+}
+
+// ── Dashboard ──────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const r = await fetch(API + '/api/admin/feedback', { headers: authed() });
+  if (r.status === 401) { logout(); return; }
+  const d = await r.json();
+  const c = d.counts || {};
+  document.getElementById('statTotal').textContent   = d.total || 0;
+  document.getElementById('statHelpful').textContent = c.helpful || 0;
+  document.getElementById('statWrong').textContent   = c.wrong_diagnosis || 0;
+  document.getElementById('statMissing').textContent = c.missing_schematic || 0;
+  feedbackData = d.recent || [];
+  renderRecent();
+}
+
+function renderRecent() {
+  const el = document.getElementById('recentFeedback');
+  const items = feedbackData.slice(0, 8);
+  if (!items.length) { el.innerHTML = '<div class="empty">No feedback yet.</div>'; return; }
+  el.innerHTML = items.map(f => feedbackHTML(f)).join('');
+}
+
+// ── Feedback ──────────────────────────────────────────────────────────────
+async function loadFeedback() {
+  const el = document.getElementById('feedbackList');
+  if (!feedbackData.length) {
+    const r = await fetch(API + '/api/admin/feedback', { headers: authed() });
+    const d = await r.json();
+    feedbackData = d.recent || [];
+  }
+  filterFeedback(currentFilter);
+}
+
+function filterFeedback(cat) {
+  currentFilter = cat;
+  const items = cat ? feedbackData.filter(f => f.category === cat) : feedbackData;
+  const el = document.getElementById('feedbackList');
+  if (!items.length) { el.innerHTML = '<div class="empty">No feedback in this category.</div>'; return; }
+  el.innerHTML = items.map(f => feedbackHTML(f)).join('');
+}
+
+function feedbackHTML(f) {
+  const badges = {
+    helpful:              '<span class="badge badge-green">✓ Helpful</span>',
+    wrong_diagnosis:      '<span class="badge badge-orange">✗ Wrong diagnosis</span>',
+    missing_schematic:    '<span class="badge badge-red">⊘ Missing schematic</span>',
+    need_better_guidance: '<span class="badge badge-blue">? Need guidance</span>',
+  };
+  const date = new Date(f.ts * 1000).toLocaleDateString('en-GB', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  return `<div class="fb-item">
+    <div class="fb-header">
+      ${badges[f.category] || '<span class="badge badge-gray">'+f.category+'</span>'}
+      ${f.board ? `<span class="badge badge-gray">${f.board}</span>` : ''}
+      ${f.symptom ? `<span class="badge badge-gray">${f.symptom}</span>` : ''}
+    </div>
+    <div class="fb-meta">${f.email || 'anon'} · ${date}</div>
+    ${f.note ? `<div class="fb-note">${escHtml(f.note)}</div>` : ''}
+  </div>`;
+}
+
+// ── Invites ────────────────────────────────────────────────────────────────
+async function generateInvite() {
+  const note  = document.getElementById('inviteNote').value.trim();
+  const uses  = parseInt(document.getElementById('inviteUses').value) || 1;
+  const r = await fetch(API + '/api/admin/invite', {
+    method: 'POST', headers: authed(),
+    body: JSON.stringify({ note, max_uses: uses })
+  });
+  const d = await r.json();
+  if (d.error) { toast(d.error, 'err'); return; }
+  document.getElementById('codeText').textContent = d.code;
+  document.getElementById('inviteLink').textContent =
+    `${location.origin}/?invite=${d.code}`;
+  document.getElementById('generatedCode').style.display = 'block';
+  toast('Invite generated', 'ok');
+}
+
+async function generateBulk() {
+  const count = parseInt(document.getElementById('bulkCount').value) || 10;
+  const note  = document.getElementById('bulkNote').value.trim() || 'bulk';
+  const codes = [];
+  for (let i = 0; i < count; i++) {
+    const r = await fetch(API + '/api/admin/invite', {
+      method: 'POST', headers: authed(),
+      body: JSON.stringify({ note: `${note}-${i+1}`, max_uses: 1 })
+    });
+    const d = await r.json();
+    if (d.code) codes.push(d.code);
+  }
+  document.getElementById('bulkCodes').innerHTML =
+    `<div class="code-block" style="flex-direction:column;align-items:flex-start;gap:4px">
+      ${codes.map(c => `<span>${c}</span>`).join('')}
+     </div>
+     <button class="btn-ghost btn-sm" style="margin-top:8px"
+       onclick="navigator.clipboard.writeText(${JSON.stringify(codes.join('\n'))}).then(()=>toast('Copied','ok'))">
+       Copy all
+     </button>`;
+  toast(`${codes.length} codes generated`, 'ok');
+}
+
+function copyCode() {
+  const code = document.getElementById('codeText').textContent;
+  navigator.clipboard.writeText(code).then(() => toast('Copied', 'ok'));
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  const r = await fetch(API + '/api/admin/users', { headers: authed() });
+  if (!r.ok) return;
+  const users = await r.json();
+  const tbody = document.getElementById('usersBody');
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No users yet.</td></tr>'; return; }
+  tbody.innerHTML = users.map(u => {
+    const last = u.last_activity
+      ? new Date(u.last_activity*1000).toLocaleDateString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+      : '—';
+    const roleBadge = u.role === 'admin'
+      ? '<span class="badge badge-blue">admin</span>'
+      : u.role === 'blocked'
+      ? '<span class="badge badge-red">blocked</span>'
+      : '<span class="badge badge-green">beta</span>';
+    return `<tr>
+      <td><b style="color:var(--color-text-primary)">${u.username}</b></td>
+      <td>${roleBadge}</td>
+      <td>${u.board_count || 0}</td>
+      <td>${u.session_count || 0}</td>
+      <td style="font-size:11px;font-family:var(--font-mono)">${last}</td>
+      <td>
+        <button class="btn-ghost btn-sm" onclick="showUserDetail(${u.id},'${u.username}')">Details</button>
+        ${u.role !== 'blocked'
+          ? `<button class="btn-danger btn-sm" style="margin-left:4px" onclick="blockUser('${u.username}')">Block</button>`
+          : `<button class="btn-ghost btn-sm" style="margin-left:4px" onclick="unblockUser('${u.username}')">Unblock</button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function showUserDetail(userId, username) {
+  document.getElementById('userDetailCard').style.display = 'block';
+  document.getElementById('userDetailTitle').textContent = `Activity — ${username}`;
+  const r = await fetch(API + '/api/admin/user_activity', {
+    method: 'POST', headers: authed(),
+    body: JSON.stringify({user_id: userId})
+  });
+  const d = await r.json();
+  const boards = (d.boards||[]).map(b =>
+    `<div class="fb-item"><div class="fb-header">
+      <span class="badge badge-gray">${b.board||'?'}</span>
+      <span class="badge badge-gray">${b.symptom||'?'}</span>
+      <span class="badge badge-gray">${b.cnt} sessions</span>
+    </div></div>`).join('') || '<div class="empty">No activity yet.</div>';
+  const fb = Object.entries(d.feedback||{}).map(([k,v])=>
+    `<span class="badge badge-gray" style="margin-right:6px">${k}: ${v}</span>`).join('') || 'No feedback';
+  document.getElementById('userDetailBody').innerHTML =
+    `<p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:12px">Feedback: ${fb}</p>${boards}`;
+}
+
+async function blockUser(username) {
+  if (!confirm(`Block ${username}?`)) return;
+  await fetch(API + '/api/admin/set_role', {
+    method:'POST', headers:authed(),
+    body: JSON.stringify({username, role:'blocked'})
+  });
+  toast('Blocked', 'ok'); loadUsers();
+}
+
+async function unblockUser(username) {
+  await fetch(API + '/api/admin/set_role', {
+    method:'POST', headers:authed(),
+    body: JSON.stringify({username, role:'beta'})
+  });
+  toast('Unblocked', 'ok'); loadUsers();
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  setTimeout(() => el.className = '', 2800);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  location.reload();
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+if (TOKEN) {
+  // Quick check by trying to load dashboard
+  fetch(API + '/api/admin/feedback', { headers: authed() }).then(r => {
+    if (r.ok) showShell();
+  });
+}
+</script>
+</body>
+</html>
