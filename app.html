@@ -889,10 +889,10 @@ function printCompPinout(ref){
   if(!panel){
     panel = document.createElement('div');
     panel.id = 'comp-pinout-panel';
-    panel.style.cssText = 'position:fixed;top:50px;right:10px;width:260px;max-height:70vh;overflow-y:auto;background:#111;border:1px solid #2a3a55;border-radius:8px;padding:10px;z-index:200;font-size:11px;';
+    panel.style.cssText = 'position:fixed;top:160px;right:10px;width:260px;max-height:60vh;overflow-y:auto;background:#111;border:1px solid #2a3a55;border-radius:8px;padding:10px;z-index:100;font-size:11px;';
     document.body.appendChild(panel);
   }
-  panel.innerHTML = html;
+  panel.innerHTML = '<button onclick="document.getElementById(\'comp-pinout-panel\').style.display=\'none\'" style="float:right;background:none;border:none;color:#888;cursor:pointer;font-size:14px">✕</button>' + html;
   panel.style.display = 'block';
 }
 
