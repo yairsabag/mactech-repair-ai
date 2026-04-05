@@ -161,7 +161,15 @@ class Handler(BaseHTTPRequestHandler):
                 bv_comps=[c2["ref"] for c2 in bvd.get("components",[]) if term.lower() in c2.get("ref","").lower()][:10]
             self.send_json({"pages":pages,"in_boardview":in_bv,"bv_nets":bv_nets,"bv_comps":bv_comps})
         elif route=="/img":
-            params=dict(urllib.parse.parse_qsl(p.query)); fp=Path(params.get("path",""))
+            params=dict(urllib.parse.parse_qsl(p.query))
+            raw_path = params.get("path","")
+            # Remap absolute Mac paths to DB_ROOT (for Railway/Docker)
+            for prefix in ["/Users/user/repair_ai_db", "/Users/yair/repair_ai_db",
+                           "/home/user/repair_ai_db", "/root/repair_ai_db_old"]:
+                if raw_path.startswith(prefix):
+                    raw_path = str(DB_ROOT) + raw_path[len(prefix):]
+                    break
+            fp = Path(raw_path)
             if fp.exists() and fp.suffix.lower() in (".png",".jpg",".jpeg"):
                 data=fp.read_bytes(); self.send_response(200)
                 self.send_header("Content-Type","image/png"); self.send_header("Content-Length",len(data)); self.end_headers(); self.wfile.write(data)
